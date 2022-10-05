@@ -34,7 +34,7 @@ namespace JwtWebApiTutorial.Controllers
         [HttpPost("Login")]
         public async Task<ActionResult<string>> Login(UserDto request)
         {
-            if(user.Username == request.Username)
+            if(user.Username != request.Username)
             {
                 return BadRequest("User not found");
             }
@@ -45,7 +45,7 @@ namespace JwtWebApiTutorial.Controllers
             }
 
             string token = CreateToken(user);
-            return Ok("My Crazy Token");
+            return Ok(token);
         }
 
         private string CreateToken(User user)
@@ -63,8 +63,7 @@ namespace JwtWebApiTutorial.Controllers
             var token = new JwtSecurityToken(
                 claims: claims,
                 expires: DateTime.Now.AddDays(1),
-                signingCredentials: creds
-                );
+                signingCredentials: creds);
 
             var jwt = new JwtSecurityTokenHandler().WriteToken(token);
 
@@ -73,7 +72,7 @@ namespace JwtWebApiTutorial.Controllers
 
         private void CreatePasswordHash(string password, out byte[] passwordHash, out byte[] passwordSalt)
         {
-            using(var hmac = new HMACSHA512())
+            using (var hmac = new HMACSHA512())
             {
                 passwordSalt = hmac.Key;
                 passwordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));

@@ -27,7 +27,6 @@ namespace JwtWebApiTutorial.Controllers
         {
             var userName = _userService.GetMyName();
             return Ok(userName);
-
             //var userName = User?.Identity?.Name;
             //var userName2 = User.FindFirstValue(ClaimTypes.Name);
             //var role = User.FindFirstValue(ClaimTypes.Role);
@@ -53,15 +52,43 @@ namespace JwtWebApiTutorial.Controllers
             {
                 return BadRequest("User not found");
             }
-
             if(!VerifyPasswordHash(request.Password, user.PasswordHash, user.PasswordSalt))
             {
                 return BadRequest("Wrong Password");
             }
-
             string token = CreateToken(user);
+
+            var refreshToken = GenerateRefreshToken();
+            SetRefreshToken(refreshToken);
+
             return Ok(token);
         }
+
+        private RefreshToken GenerateRefreshToken()
+        {
+            var refreshToken = new RefreshToken
+            {
+                Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
+                Expires = DateTime.Now.AddDays(7),
+                Created = DateTime.Now
+            };
+
+            return refreshToken;
+        }
+        
+        private void SetRefreshToken(RefreshToken newRefreshToken)
+            {
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Expires = newRefreshToken.Expires
+            };
+            Response.Cookies.Append("refreshToken", newRefreshToken.Token, cookieOptions);
+
+            user.RefreshToken = newRefreshToken.Token;
+            user.TokenCreated = newRefreshToken.Created;
+            user.TokenExpires = newRefreshToken.Expires;
+            }
 
         private string CreateToken(User user)
         {
